@@ -6,7 +6,7 @@
 
 ## 1. 获取 API Key
 
-1. 登录 https://ppio.com（支持 Google / GitHub / 邮箱）
+1. 登录 https://ppio.com（支持 手机号 / 账号密码 登录）
 2. 进入 [Key 管理](https://ppio.com/settings/key-management)
 3. 创建新的 API Key
 
