@@ -1,4 +1,4 @@
 interface:
   display_name: "PPIO Docs"
   short_description: "PPIO API、沙箱、GPU 及集成方案"
-  default_prompt: "使用 $ppio-docs 回答 PPIO 平台相关问题，提供简洁步骤和可运行示例；对于动态数据，请实时验证并注明 Verified on: YYYY-MM-DD。"
+  default_prompt: "使用 $ppio-docs 回答 PPIO 平台相关问题，提供简洁步骤和可运行示例；对于动态数据，请实时验证并注明 最后验证: YYYY-MM-DD。"
