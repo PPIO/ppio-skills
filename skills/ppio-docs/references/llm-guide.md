@@ -64,7 +64,7 @@ curl https://api.ppio.com/openai/v1/models \
 | `top_p` | 核采样 | 0.9 |
 | `stream` | 流式返回响应块 | true |
 
-### 重复控制
+### 频率控制
 
 | 参数 | 说明 |
 |-----------|-------------|
