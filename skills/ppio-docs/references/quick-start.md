@@ -71,7 +71,7 @@ curl https://api.ppio.com/openai/v1/chat/completions \
 
 ## 4. 充值
 
-新用户可获赠免费额度。如需充值，访问[充值页面](https://ppio.com/billing)
+新用户可获赠代金券。如需充值，访问[充值页面](https://ppio.com/billing)
 
 
 ## 下一步
