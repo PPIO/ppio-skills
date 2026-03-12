@@ -29,11 +29,11 @@ description: |
 | 问题 | 读取此文件 | 实时文档 |
 |----------|-----------|-----------|
 | 快速入门 | [quick-start.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/quick-start.md) | - |
-| LLM API 使用 | [llm-guide.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/llm-guide.md) | [API 参考](https://ppio.com/docs/api-reference/model-apis-llm-create-chat-completion) |
-| Agent 沙箱 | [sandbox-guide.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/sandbox-guide.md) | [文档](https://ppio.com/docs/guides/sandbox-overview) |
-| GPU 实例 | [gpu-guide.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/gpu-guide.md) | [文档](https://ppio.com/docs/guides/gpu-instance-overview) |
+| LLM API 使用 | [llm-guide.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/llm-guide.md) | [API 参考](https://ppio.com/docs/models/reference-llm-create-chat-completion) |
+| Agent 沙箱 | [sandbox-guide.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/sandbox-guide.md) | [文档](https://ppio.com/docs/sandbox/overview) |
+| GPU 实例 | [gpu-guide.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/gpu-guide.md) | [文档](https://ppio.com/docs/third-party/overview) |
 | 工具集成 | [integrations.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/integrations.md) | - |
-| 常见问题 | [faq-and-issues.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/faq-and-issues.md) | [FAQ](https://ppio.com/docs/guides/faq) |
+| 常见问题 | [faq-and-issues.md](https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-docs/references/faq-and-issues.md) | [FAQ](https://ppio.com/docs/gpu/faq) |
 
 ## 参考文件选择规则
 
