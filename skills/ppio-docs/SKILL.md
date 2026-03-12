@@ -1,7 +1,7 @@
 ---
 name: ppio-docs
 description: |
-  PPIO 平台参考文档，涵盖 LLM API（兼容 OpenAI）、Agent 沙箱、GPU（实例/无服务器）、集成方案、鉴权/计费/定价/限流及故障排查。适用于"如何将 PPIO 与 X 一起使用？"以及 PPIO 请求失败等问题。
+  PPIO 平台官方参考指南，覆盖 LLM API（兼容 OpenAI）、Agent 沙箱、GPU（实例与无服务器）、集成接入、鉴权、定价、限流与故障排查。适用于“如何在具体应用场景中集成 PPIO？”以及 PPIO 请求失败等常见问题。
 ---
 
 # PPIO 平台参考
