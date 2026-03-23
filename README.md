@@ -20,6 +20,7 @@ npx skills add PPIO/ppio-skills --skill ppio-docs
 在 `--skill` 中使用以下名称：
 
 - `ppio-docs`：PPIO 平台文档与集成参考技能
+- `ppio-sandbox`：PPIO Agent Sandbox CLI 包装技能 — 构建模板、管理沙箱、部署 Agent
 
 
 ## 贡献流程
