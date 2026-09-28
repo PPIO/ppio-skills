@@ -1,193 +1,111 @@
-# PPIO Sandbox CLI — 完整命令参考
+# CLI reference
 
-## auth
+The `ppio` CLI covers auth, sandbox, template, snapshot, secret, and volume operations. Every command reference keeps its positional arguments, flags, defaults, units, output options, and mutual exclusions beside its examples. Install with `npm i -g ppio-sandbox-cli`. Commands that register `--output <format>` (`-o`) accept `pretty` (default), `json`, or `yaml`. The old `--format` and `--json` are deprecated aliases for `--output`. Sandbox and template commands are shown inline in the module references (create.md, kill.md, list.md, template-*.md, …); this file documents the **auth** command group and gives a command index.
 
-### `auth login`
-通过浏览器 OAuth 登录。凭据存储在本地。
+## CLI parameter conventions
 
-### `auth logout`
-删除本地存储的凭据。
+Every command also accepts `-h, --help`. Only the three connection options below are **global** (accepted before the subcommand and inherited by subcommands), together with `-V, --version`:
 
-### `auth info`
-显示当前用户邮箱、团队名称和团队 ID。
+| Global option | Type / default | Purpose |
+|---|---|---|
+| `--domain <domain>` | string; `PPIO_DOMAIN` or `sandbox.ppio.cn` | Region / sandbox domain. |
+| `--api-url <api-url>` | URL; derived from domain | API endpoint override. |
+| `--request-timeout <duration>` | duration; SDK default | API request deadline, e.g. `120s` or `5m`. |
 
-### `auth configure`
-交互式选择切换可用团队。
+Everything else is **per-command** — passing one of these at the top level (`ppio --api-key … sandbox list`) is an unknown-option error. The API key comes from the `PPIO_API_KEY` environment variable or the stored login; there is no global `--api-key` flag:
 
----
+| Option | Where it is accepted | Purpose |
+|---|---|---|
+| `--api-key <key>` | `auth login` only | Log in with a literal API key. |
+| `-t, --team <team-id>` | `template list`, `template delete`, `template publish`, `template unpublish` (and deprecated `template build`) | Team associated with the operation. |
+| `-p, --path <path>` | `template create`, `template init`, `template delete`, `template publish`, `template unpublish`, `template migrate`, `volume mount` (and deprecated `template build`) | Root directory for the command. |
+| `--config <ppio-toml>` | `template delete`, `template publish`, `template unpublish`, `template migrate`, `sandbox create` (and deprecated `template build`) | Config file (`./ppio.toml`) for the older template layout. |
+| `-s, --select` | `template delete`, `template publish`, `template unpublish` | Interactive template picker. |
 
-## template（别名：tpl）
+### Output flags
 
-### `template build [template-id]`（别名：bd）
-从 Dockerfile 构建沙箱模板。
+Commands that produce structured output register `-o, --output <format>` (`pretty` default, plus `json` and `yaml`), with `-f, --format` and `--json` as deprecated aliases: `template list/get/exists/build-status`, `sandbox list/info/create/events/quota`, `snapshot list/create`, `secret list/get`, `volume list/get/create`.
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-p, --path <path>` | 根目录 | `.` |
-| `-d, --dockerfile <file>` | Dockerfile 路径 | 自动检测 |
-| `-n, --name <name>` | 模板名称（小写字母/数字/短横线/下划线） | — |
-| `-c, --cmd <command>` | 沙箱启动命令 | — |
-| `--ready-cmd <command>` | 就绪检查（必须返回 exit 0） | — |
-| `-i, --image <image>` | 使用预构建镜像代替 Dockerfile | — |
-| `-u, --username <user>` | 镜像仓库用户名 | — |
-| `-w, --password <pass>` | 镜像仓库密码 | — |
-| `--team <team-id>` | 团队 ID | — |
-| `--config <file>` | 配置文件路径 | — |
-| `--cpu-count <n>` | CPU 数量 | `2` |
-| `--memory-mb <n>` | 内存（MB，必须为偶数） | `512` |
-| `--build-arg <K=V...>` | Docker 构建参数 | — |
-| `--no-cache` | 跳过构建缓存 | — |
+`sandbox logs` and `sandbox metrics` are the exception — they have **no** `--output`/`--json`, and their `-f` means `--follow`, not `--format`. Passing an option absent from a command's own table is an unknown-option error.
 
-如果提供了 `[template-id]`，则重新构建该模板。否则创建新模板。
+## Authentication (`auth`)
 
-### `template list`（别名：ls）
+Credentials are stored locally at `~/.ppio/config.json`.
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `--team <team-id>` | 按团队筛选 | — |
-| `-ty, --type <type>` | `template_build` 或 `snapshot_template` | `template_build` |
-| `-p, --page <n>` | 页码（从 1 开始） | `1` |
-| `-l, --limit <n>` | 每页数量 | `10` |
+```bash
+ppio auth login        # browser-based sign-in; captures token, selects default team
+ppio auth logout       # sign out (deletes ~/.ppio/config.json)
+ppio auth info         # show current user (email) and selected team
+ppio auth configure    # switch the active team for the current session
+```
 
-### `template init`（别名：it）
-在当前或指定目录创建模板 `ppio.Dockerfile`。
+- `login` opens a browser authorization page; if already logged in it reports the current session. To sign in as a different user, `logout` first.
+- `configure` requires being logged in; it lists your teams and saves the chosen team's name/ID/API key.
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-p, --path <path>` | 根目录 | `.` |
+### `ppio auth login`
 
-### `template delete [template-id]`（别名：dl）
+| Parameter | Required / default | Purpose |
+|---|---|---|
+| `--api-key <key>` | exactly one key source; optional | Login with a literal API key. |
+| `--api-key-env <name>` | mutually exclusive | Read the API key from the named environment variable. |
+| `--api-key-stdin` | mutually exclusive | Read a trimmed API key from stdin. |
+| `--email <email>` | optional | Email to store for headless login. |
+| `--force` | false | Replace the existing local login configuration. |
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-p, --path <path>` | 根目录 | — |
-| `--config <file>` | 配置文件路径 | — |
-| `-s, --select` | 交互式选择模式 | — |
-| `--team <team-id>` | 团队 ID | — |
-| `-y, --yes` | 跳过确认 | — |
+With no key source, the CLI uses an existing config, headless `PPIO_API_KEY`, or browser login.
 
-### `template publish [template-id]`（别名：pb）
-将模板设为公开。选项同 `delete`。
+| Command | Parameters | Purpose |
+|---|---|---|
+| `ppio auth logout` | none | Delete the local CLI config and sign out. |
+| `ppio auth info` | none | Show the current user and selected team. |
+| `ppio auth configure` | none; interactive prompt | Select and save the active team. |
 
-### `template unpublish [template-id]`（别名：upb）
-将模板设为私有。选项同 `delete`。
+## Additional sandbox/template commands
 
-### `template version [template-id]`（别名：vn）
-列出所有构建版本或回滚到特定版本。
+The command examples and parameter tables live with their resource references: [network](sandbox-network.md), [hotplug memory](sandbox-timeout.md), and [template management](template-list-delete.md).
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-p, --path <path>` | 根目录 | — |
-| `--config <file>` | 配置文件路径 | — |
-| `-r, --rollback <build-id>` | 回滚到指定构建 | — |
+## Command index
 
----
+| Area | Command | Reference |
+|------|---------|-----------|
+| Auth | `auth login/logout/info/configure` | above |
+| Region | `PPIO_DOMAIN` (default `cn-shanghai-1`, v1; set to the v2 domain for Secrets/Snapshots) | [region.md](region.md) |
+| Sandbox — create | `sandbox create [template]` (alias `cr`) | [create.md](sandbox-create.md) |
+| Sandbox — list | `sandbox list` (alias `ls`) | [list.md](sandbox-list.md) |
+| Sandbox — connect (remote shell) | `sandbox connect <id>` (alias `cn`) | [connect.md](sandbox-connect.md) |
+| Sandbox — exec | `sandbox exec <id> -- <cmd>` (alias `ex`) | [run-command.md](sandbox-run-command.md) |
+| Sandbox — pause/resume | `sandbox pause/resume <id>` | [pause-resume.md](sandbox-pause-resume.md) |
+| Sandbox — kill | `sandbox kill <id>` / `-a` | [kill.md](sandbox-kill.md) |
+| Sandbox — metrics/events | `sandbox metrics/events <id>` | [info-metrics-events.md](sandbox-info-metrics-events.md) |
+| Sandbox — network egress | `sandbox network <id> --allow-out/--deny-out` | [sandbox-network.md](sandbox-network.md) |
+| Sandbox — controller authentication | `sandbox create <template> --secure` / `--no-secure` | [sandbox-secured-access.md](sandbox-secured-access.md) |
+| Sandbox — set timeout | `sandbox set-timeout <id> <timeout>` (e.g. `5m`, `1h`) | [sandbox-timeout.md](sandbox-timeout.md) |
+| Sandbox — hotplug memory | `sandbox hotplug-memory <id> <size-mib>` (alias `hp`) — **deprecated, pending removal; hidden from `--help`** | [sandbox-timeout.md](sandbox-timeout.md) |
+| Snapshot | `snapshot create/list/delete` (aliases `ls`, `rm`) | [snapshot.md](snapshot.md) |
+| Secret | `secret create/get/list/update/delete` (aliases `info`, `ls`, `rm`) | [secret.md](secret.md) |
+| Volume | `volume create/list/get/delete/mount/unmount` (aliases `ls`, `info`, `rm`) | [volume.md](volume.md) |
+| Volume — mount at sandbox creation | `sandbox create <template> --volume-mount /mnt/data=my-data` (repeatable) | [volume.md](volume.md#mount-at-sandbox-creation) |
+| Template — build | `template create [name]` (alias `ct`) | [template-build.md](template-build.md) |
+| Template — build (deprecated) | `template build` (alias `bd`) — superseded by `template create`; pending removal | [template-build.md](template-build.md) |
+| Template — list/delete | `template list` / `template delete` (aliases `ls`, `dl`) | [template-list-delete.md](template-list-delete.md) |
+| Template — publish/unpublish | `template publish/unpublish [template]` (aliases `pb`, `upb`) | [template-list-delete.md](template-list-delete.md) |
+| Template — migrate | `template migrate` — converts `ppio.Dockerfile` + `ppio.toml` to the Template SDK format | [template-list-delete.md](template-list-delete.md) |
+| Template — tags | `template tags get/add/remove <templateID> [tags]` | [template-tags.md](template-tags.md) |
 
-## sandbox（别名：sbx）
+### Commands not covered by a reference file
 
-### `sandbox create [template-id]`（别名：cr）
-创建沙箱并连接终端。
+These exist in CLI 2.1.0 but have no dedicated reference here. Run `ppio <group> <cmd> --help` for their flags:
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-p, --path <path>` | 根目录 | — |
-| `--config <file>` | 配置文件路径 | — |
-| `-d, --detach` | 创建沙箱但不连接终端 | — |
-
-如未指定模板 ID，则使用 `ppio.toml` 中的配置。
-
-### `sandbox list`（别名：ls）
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-s, --state <states>` | 按状态筛选（逗号分隔：running, paused） | `running` |
-| `-m, --metadata <k=v>` | 按元数据筛选 | — |
-| `-l, --limit <n>` | 最大返回数量 | — |
-
-### `sandbox connect <sandboxID>`（别名：cn）
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `--timeout <seconds>` | 连接超时 | `300` |
-
-### `sandbox kill [sandboxID]`（别名：kl）
-
-| 选项 | 说明 |
-|------|------|
-| `-a, --all` | 终止所有运行中的沙箱 |
-
-互斥：指定沙箱 ID 或使用 `--all`。
-
-### `sandbox logs <sandboxID>`（别名：lg）
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `--level <level>` | DEBUG, INFO, WARN, ERROR | `INFO` |
-| `-f, --follow` | 实时流式输出 | — |
-| `--format <fmt>` | `pretty` 或 `json` | `pretty` |
-| `--loggers [names]` | 按 logger 名称筛选（逗号分隔） | — |
-
-### `sandbox metrics <sandboxID>`（别名：mt）
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-f, --follow` | 实时流式输出 | — |
-| `--format <fmt>` | `pretty` 或 `json` | `pretty` |
-
-报告 CPU、内存和磁盘使用情况。
-
-### `sandbox clone <sandboxID>`（别名：cl）
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-c, --count <n>` | 克隆数量 | `1` |
-| `-t, --timeout <seconds>` | 克隆超时 | 继承父沙箱 |
-| `-n, --nodeid <id>` | 调度到指定节点 | — |
-| `-s, --strict` | 要求精确数量否则失败 | — |
-
-### `sandbox commit <sandboxID>`（别名：cm）
-从当前沙箱状态创建快照模板。
-
-| 选项 | 说明 |
-|------|------|
-| `-a, --alias <alias>` | 创建的模板别名 |
-
----
-
-## agent
-
-### `agent configure`
-设置 Agent 项目配置，创建 Dockerfile 和 docker-ignore。
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-n, --name <name>` | Agent 名称 | 自动检测 |
-| `-e, --entrypoint <file>` | 入口文件 | 自动检测或 `app.py` |
-| `--agent-version <ver>` | Agent 版本 | `1.0.0` |
-| `-a, --author <email>` | 作者邮箱 | 从环境或提示获取 |
-| `-rf, --requirements-file <file>` | 依赖文件路径 | — |
-| `--no-interactive` | 跳过交互式提示 | — |
-| `--force` | 强制覆盖配置 | — |
-| `--verbose` | 详细输出 | — |
-
-### `agent launch`（别名：deploy）
-构建并部署 Agent 到 PPIO Sandbox。
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `--timeout <seconds>` | 部署超时 | `300` |
-| `--no-cache` | 禁用构建缓存 | — |
-| `--dry-run` | 试运行，不实际部署 | — |
-| `--update-existing` | 更新已有模板 | — |
-| `--verbose` | 详细输出 | — |
-
-### `agent invoke <payload>`
-使用 JSON 负载或提示文本调用已部署的 Agent。
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `--agentId <id>` | Agent ID（`agent_name-template_id`） | — |
-| `--stream` | 启用流式响应 | — |
-| `--timeout <seconds>` | 请求超时 | `60` |
-| `--env <key=value>` | 环境变量（可重复使用） | — |
-| `--verbose` | 详细输出 | — |
+| Command | Purpose |
+|---|---|
+| `sandbox logs <id>` (alias `lg`) | Show sandbox logs. `-f` follows; no `--output`. |
+| `sandbox cp <source> <destination>` | Copy a file between the local filesystem and a sandbox, using `<sandbox-id>:<path>` for the remote side. `-u, --user` sets the sandbox user. |
+| `sandbox clone <id>` | Clone a sandbox. |
+| `sandbox reset <id>` | Reset a sandbox. |
+| `sandbox commit <id>` | Commit a sandbox to create a snapshot template. |
+| `sandbox quota` | Show sandbox quota. |
+| `template init` (alias `it`) | Initialize a new template using the SDK. |
+| `template exists <templateName>` | Check whether a template exists. |
+| `template get <templateID>` (alias `info`) | Show template information. |
+| `template alias-exists <alias>` | Check whether a template alias exists. |
+| `template build-status <templateID> <buildID>` | Get template build status. |
