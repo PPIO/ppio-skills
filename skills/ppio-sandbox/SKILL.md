@@ -1,302 +1,169 @@
 ---
 name: ppio-sandbox
-description: 当用户提到「创建沙箱」「构建模板」「部署 agent」「列出沙箱」「杀掉沙箱」「沙箱日志」「克隆沙箱」「提交沙箱」「模板构建」「ppio-sandbox-cli」「ppio sandbox」「沙箱」或任何 PPIO Sandbox CLI 相关操作时触发。
+version: 1.0.0
+description: >-
+  Write and troubleshoot Python, JavaScript/TypeScript, and CLI workflows for
+  PPIO Agent Sandbox. Covers sandbox lifecycle, commands, network egress,
+  secured access, templates and readiness checks, snapshots, filesystem,
+  secrets, persistent volumes, regions, Git, PTY, log streaming, and desktop VNC.
+  Use when working with ppio-sandbox, the PPIO client, ppio CLI commands,
+  sandbox files or credentials, custom templates, service previews, long-running
+  sandboxes, or PPIO_DOMAIN.
 ---
 
-# PPIO Agent Sandbox CLI
+# PPIO Sandbox SDK & CLI
 
-`ppio-sandbox-cli` 封装了 PPIO Agent Sandbox 平台。用它来从 Dockerfile 构建模板、管理沙箱生命周期、以及部署 Agent。
+Write correct, idiomatic code for the **PPIO Agent Sandbox** — Sandbox module. This skill gives you the accurate client entry point, method names, parameters, and equivalent CLI commands across Python, JavaScript/TypeScript, and the `ppio` CLI.
 
----
+The authoritative source is the product documentation at <https://ppio.com/docs/sandbox/overview> (the SDK code in this repo may lag behind). This skill reflects the current documented API. For what changed between releases, see the changelog at <https://ppio.com/docs/announcement/changelog-agent-sx>.
 
-## 安装
+## Client entry point
 
-如果本技能尚未安装到本地，`[AGENT]` 请按以下步骤安装。
+All SDK usage goes through the `PPIO` client. Create one client, then call operations under `ppio.sandbox.*`.
 
-### 检测 Agent 平台
+**Python**
+```python
+from ppio_sandbox import PPIO
+
+ppio = PPIO()  # reads PPIO_API_KEY from the environment
+sandbox = ppio.sandbox.create()
+```
+
+**JavaScript / TypeScript**
+```javascript
+import { PPIO } from 'ppio-sandbox'
+
+const ppio = new PPIO()  // reads PPIO_API_KEY from the environment
+const sandbox = await ppio.sandbox.create()
+```
+
+**CLI** — every command is under `ppio sandbox <verb>`. Set `PPIO_API_KEY` in the environment first.
+
+> **Note:** JS methods are camelCase (`getInfo`, `setTimeout`, `getEvents`); Python methods are snake_case (`get_info`, `set_timeout`, `get_events`). Time is milliseconds in JS (`timeoutMs`) and seconds in Python (`timeout`).
+
+## Prerequisites
+
+This skill documents the API as of SDK/CLI **2.1.0 — both the `ppio-sandbox` SDK and `ppio-sandbox-cli` must be >= 2.1.0**. Older versions are missing or behave differently for some of the operations described here; if the user's installed version is older, ask them to upgrade before relying on these references.
+
+- Python: `pip install "ppio-sandbox>=2.1.0"` (Python 3.10+)
+- JS/TS: `npm i ppio-sandbox@^2.1.0` (Node.js 20+)
+- CLI: `npm i -g ppio-sandbox-cli@^2.1.0` (check with `ppio --version`)
+- Set `PPIO_API_KEY` in the environment for all three.
+
+## Choosing what to read
+
+Each operation has a reference file with Python + JS/TS + CLI examples. Read the one you need — don't guess the API.
+
+**Regions** — which PPIO region / API domain to connect to:
+
+| Task | Reference |
+|------|-----------|
+| Available regions, select v2 (`cn-beijing-1`, recommended) vs v1 (default, `cn-shanghai-1`) via `PPIO_DOMAIN` or `--domain`, legacy-domain limits | [references/region.md](references/region.md) |
+
+**Sandbox module** — manage running sandboxes:
+
+| Task | Reference |
+|------|-----------|
+| Create a sandbox (from template, envs, metadata, secrets, lifecycle) | [references/sandbox-create.md](references/sandbox-create.md) |
+| Run commands inside a sandbox (foreground, background, streaming) | [references/sandbox-run-command.md](references/sandbox-run-command.md) |
+| List sandboxes (filter by state / metadata, pagination) | [references/sandbox-list.md](references/sandbox-list.md) |
+| Connect to a running sandbox | [references/sandbox-connect.md](references/sandbox-connect.md) |
+| Pause & resume a sandbox | [references/sandbox-pause-resume.md](references/sandbox-pause-resume.md) |
+| Kill a sandbox (single or all) | [references/sandbox-kill.md](references/sandbox-kill.md) |
+| Timeout (max lifetime) and lifecycle on timeout | [references/sandbox-timeout.md](references/sandbox-timeout.md) |
+| Long-running sandboxes (lift the 1-hour timeout cap via the `long_running` metadata marker) | [references/sandbox-long-running.md](references/sandbox-long-running.md) |
+| Idle timeout (auto-stop/pause on inactivity) | [references/sandbox-idle-timeout.md](references/sandbox-idle-timeout.md) |
+| Info, metrics, and events | [references/sandbox-info-metrics-events.md](references/sandbox-info-metrics-events.md) |
+| Network access (disable internet, egress rules, public/private service URLs, Host header mask) | [references/sandbox-network.md](references/sandbox-network.md) |
+| Secured controller access, legacy template migration, service vs controller authentication | [references/sandbox-secured-access.md](references/sandbox-secured-access.md) |
+
+**Template module** — build reusable sandbox blueprints (`ppio.template.*`):
+
+| Task | Reference |
+|------|-----------|
+| Define a template (base image, private registries, user/workdir, run/copy/env, packages, git clone, start command and ready checks) | [references/template-define.md](references/template-define.md) |
+| Build a template and control the build cache | [references/template-build.md](references/template-build.md) |
+| Assign / remove / get template tags | [references/template-tags.md](references/template-tags.md) |
+| List & delete templates | [references/template-list-delete.md](references/template-list-delete.md) |
+
+**Snapshot module** — save and restore sandbox state:
+
+| Task | Reference |
+|------|-----------|
+| Create a snapshot, create a sandbox from a snapshot, list & delete snapshots | [references/snapshot.md](references/snapshot.md) |
+
+**Filesystem module** — files inside a sandbox (`sandbox.files.*`):
+
+| Task | Reference |
+|------|-----------|
+| Read / write files (single & multiple), file & directory metadata | [references/fs-read-write.md](references/fs-read-write.md) |
+| Watch a directory for filesystem events | [references/fs-watch.md](references/fs-watch.md) |
+| Upload / download data, including pre-signed URLs | [references/fs-upload-download.md](references/fs-upload-download.md) |
+
+**Secret module** — inject credentials without exposing them (`Secret` class):
+
+| Task | Reference |
+|------|-----------|
+| Create / get / list / update / delete secrets, `secret_envs`, and HTTPS-header-only substitution limits | [references/secret.md](references/secret.md) |
+
+**Volume module** — persistent storage that outlives a sandbox (`ppio.volume.*`):
+
+| Task | Reference |
+|------|-----------|
+| Create/connect/list/get volumes, mount at creation or runtime, reuse data across sandboxes, update quota, unmount and delete | [references/volume.md](references/volume.md) |
+
+**Tools / integrations** — capabilities layered on a sandbox:
+
+| Task | Reference |
+|------|-----------|
+| Git — clone, branch, commit, push/pull, remotes, auth (`sandbox.git.*`) | [references/tools-git.md](references/tools-git.md) |
+| PTY — interactive terminal sessions (`sandbox.pty.*`) | [references/tools-pty.md](references/tools-pty.md) |
+| Log streaming — stream command stdout/stderr in real time | [references/tools-log-streaming.md](references/tools-log-streaming.md) |
+| Computer Use — virtual desktop + VNC stream (`ppio.desktop.*`) | [references/tools-computer-use.md](references/tools-computer-use.md) |
+
+**CLI** — `ppio` commands (auth, snapshot, secret, volume, and a full command index). Each resource reference keeps its CLI examples beside the corresponding parameter table:
+
+| Task | Reference |
+|------|-----------|
+| Auth (login/logout/info/configure), snapshot/secret/volume groups, CLI-only sandbox/template commands, command index | [references/cli-reference.md](references/cli-reference.md) |
+
+**Parameter reference** — every SDK operation has an explicit table in its topic reference. Shared connection, time, size, and request-option groups are centralized here:
+
+| Shared SDK parameter semantics | Reference |
+|---|---|
+| Constructor, connection subsets, request deadlines, units | [references/common-parameters.md](references/common-parameters.md) |
+
+## Best practices & integration guides (external)
+
+End-to-end guides on <https://ppio.com/docs/sandbox/overview> for common scenarios that combine several operations above. These are not mirrored in `references/`; fetch the page when the user's task matches one of them:
+
+| Scenario | Guide |
+|----------|-------|
+| Connect a sandbox to a private Tailscale tailnet (`tailscale` template, auth keys, subnet routing) | <https://ppio.com/docs/sandbox/tailscale> |
+| Route sandbox traffic through an OpenVPN tunnel using a `.ovpn` client config | <https://ppio.com/docs/sandbox/openvpn> |
+| Run Browser Use AI browser agents at high concurrency inside sandboxes | <https://ppio.com/docs/sandbox/integrate-browser-use> |
+| Virtual desktop with VNC streaming (Computer Use) | <https://ppio.com/docs/sandbox/integrate-e2b-desktop> |
+| Run OpenAI Codex as a coding agent in the `codex` template | <https://ppio.com/docs/sandbox/codex> |
+| Use the OpenAI Agents API with sandboxes as the execution backend | <https://ppio.com/docs/sandbox/openai-agents-api> |
+| Speed up outbound package/registry traffic with proxy acceleration | <https://ppio.com/docs/sandbox/proxy-acceleration> |
+| Mount S3-compatible object storage for data that must outlive the sandbox | <https://ppio.com/docs/sandbox/sandbox-mount-cloudstorage> |
+| SSH into a sandbox (template with an `sshd` ready check) | <https://ppio.com/docs/sandbox/sandbox-ssh-access> |
+
+## Conventions used in every example
+
+- The SDK examples assume `ppio` is an initialized `PPIO` client (see above).
+- Always release sandboxes you no longer need with `sandbox.kill()`; leaked sandboxes keep billing until their timeout.
+- Prefer passing the API key via the `PPIO_API_KEY` environment variable rather than hardcoding it.
+- For services inside a sandbox, bind to `0.0.0.0`, choose public or token-protected service access, and use the sandbox host URL. Controller `secure` is a separate setting; see [network access](references/sandbox-network.md) and [secured access](references/sandbox-secured-access.md).
+
+## Keeping this skill up to date
+
+This skill is distributed from the `PPIO/ppio-skills` repository; the `version` in the frontmatter above matches the installed copy. If the documentation here appears to disagree with the actual SDK/CLI behavior, or the user asks to update this skill, reinstall it to pick up the latest version:
 
 ```bash
-# Claude Code
-if [ -d "$HOME/.claude/skills" ]; then
-  echo "CLAUDE_CODE"
-# Gemini CLI
-elif [ -d "$HOME/.gemini/skills" ]; then
-  echo "GEMINI_CLI"
-# OpenClaw
-elif command -v openclaw >/dev/null 2>&1; then
-  echo "OPENCLAW"
-else
-  echo "UNKNOWN"
-fi
+npx skills add PPIO/ppio-skills --skill ppio-sandbox
 ```
 
-### 按平台安装
+Then restart the agent session so the updated files are loaded. To check the currently installed version, read the `version:` field in this file's frontmatter.
 
-**Claude Code:**
-
-```bash
-SKILL_DIR="$HOME/.claude/skills/ppio-sandbox"
-mkdir -p "$SKILL_DIR/references"
-curl -sL "https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-sandbox/SKILL.md" \
-  -o "$SKILL_DIR/SKILL.md"
-curl -sL "https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-sandbox/references/cli-reference.md" \
-  -o "$SKILL_DIR/references/cli-reference.md"
-echo "已安装到 $SKILL_DIR"
-```
-
-**Gemini CLI:**
-
-```bash
-SKILL_DIR="$HOME/.gemini/skills/ppio-sandbox"
-mkdir -p "$SKILL_DIR/references"
-curl -sL "https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-sandbox/SKILL.md" \
-  -o "$SKILL_DIR/SKILL.md"
-curl -sL "https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-sandbox/references/cli-reference.md" \
-  -o "$SKILL_DIR/references/cli-reference.md"
-echo "已安装到 $SKILL_DIR"
-```
-
-**其他 Agent / 手动安装:**
-
-```bash
-SKILL_DIR="<你的-agent-skills-目录>/ppio-sandbox"
-mkdir -p "$SKILL_DIR/references"
-curl -sL "https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-sandbox/SKILL.md" \
-  -o "$SKILL_DIR/SKILL.md"
-curl -sL "https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-sandbox/references/cli-reference.md" \
-  -o "$SKILL_DIR/references/cli-reference.md"
-```
-
-### 安装完成标准
-
-安装未完成，除非以下所有条件均满足：
-
-1. SKILL.md 已保存到本地技能目录
-2. `references/cli-reference.md` 已保存到同级目录
-3. CLI 已安装且为最新版本（下方 Step 0 检查通过）
-4. 认证已验证
-5. `[AGENT]` 向用户发送确认消息：
-
-```
-✅ ppio-sandbox 技能已安装。
-
-你现在可以：
-- 「创建沙箱」— 基于模板启动一个沙箱
-- 「构建模板」— 从 Dockerfile 构建模板
-- 「部署 agent」— 部署并调用 Agent
-- 「列出沙箱」— 查看正在运行的沙箱
-
-CLI 版本：<version>
-文档：https://ppio.ai/docs/guides/sandbox-overview
-```
-
----
-
-## Step 0：确保 CLI 已安装且为最新版本
-
-**每次触发技能时都执行此检查。**
-
-```bash
-if ! command -v node >/dev/null 2>&1; then
-  echo "NO_NODE"
-elif ! command -v ppio-sandbox-cli >/dev/null 2>&1; then
-  echo "NOT_INSTALLED"
-else
-  _LOCAL=$(ppio-sandbox-cli --version)
-  _LATEST=$(npm view ppio-sandbox-cli@beta version 2>/dev/null)
-  if [ -n "$_LATEST" ] && [ "$_LOCAL" != "$_LATEST" ]; then
-    echo "OUTDATED local=$_LOCAL latest=$_LATEST"
-  else
-    echo "OK $_LOCAL"
-  fi
-fi
-```
-
-根据结果执行：
-
-- **NO_NODE** → 先安装 Node.js：
-  - macOS：`brew install node`
-  - Linux：`curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs`
-- **NOT_INSTALLED** → `npm install -g ppio-sandbox-cli@beta`
-- **OUTDATED** → `npm install -g ppio-sandbox-cli@beta`
-- **OK** → 继续。
-
-安装或升级后，验证认证状态：
-
-```bash
-ppio-sandbox-cli auth info 2>&1 || echo "NOT_LOGGED_IN"
-```
-
-如果 NOT_LOGGED_IN，运行 `ppio-sandbox-cli auth login`（会打开浏览器）。
-
-设置 `PPIO_API_KEY` 环境变量供 SDK 使用。
-
-## 快速参考
-
-| 项目 | 值 |
-|------|-----|
-| **CLI 名称** | `ppio-sandbox-cli` |
-| **文档** | https://ppio.ai/docs/guides/sandbox-overview |
-| **控制台** | https://ppio.ai/console |
-| **NPM** | https://www.npmjs.com/package/ppio-sandbox-cli |
-
-## 命令总览
-
-```
-ppio-sandbox-cli
-├── auth          # login, logout, info, configure（切换团队）
-├── template      # build, list, init, delete, publish, unpublish, version
-├── sandbox       # create, list, connect, kill, logs, metrics, clone, commit
-└── agent         # configure, launch（别名：deploy，部署）, invoke
-```
-
-## 常用工作流
-
-### 1. 从 Dockerfile 构建模板
-
-```bash
-# 初始化一个模板 Dockerfile
-ppio-sandbox-cli template init
-
-# 构建并推送（自动检测 ppio.Dockerfile）
-ppio-sandbox-cli template build -n my-template
-
-# 重新构建已有模板
-ppio-sandbox-cli template build <template-id>
-```
-
-### 2. 创建和使用沙箱
-
-```bash
-# 创建沙箱但不连接终端（适用于非交互 / Agent 环境）
-ppio-sandbox-cli sandbox create <template-id> --detach
-
-# 创建沙箱并连接交互式终端（需要 TTY）
-ppio-sandbox-cli sandbox create <template-id>
-
-# 列出正在运行的沙箱
-ppio-sandbox-cli sandbox list
-
-# 连接到已有沙箱
-ppio-sandbox-cli sandbox connect <sandbox-id>
-
-# 查看日志（实时流式输出）
-ppio-sandbox-cli sandbox logs <sandbox-id> -f
-
-# 查看资源指标（CPU、内存、磁盘）
-ppio-sandbox-cli sandbox metrics <sandbox-id> -f
-
-# 终止沙箱
-ppio-sandbox-cli sandbox kill <sandbox-id>
-
-# 终止所有运行中的沙箱
-ppio-sandbox-cli sandbox kill --all
-```
-
-**重要：** 在 AI Agent（Claude Code、Gemini CLI 等）中运行时，`sandbox create` 必须加 `--detach`（`-d`）。这些环境没有真实 TTY，交互式终端会失败。用 `--detach` 创建后，如需终端可在真正的终端中运行 `sandbox connect`。
-
-### 3. 克隆与快照
-
-```bash
-# 克隆沙箱（创建相同副本）
-ppio-sandbox-cli sandbox clone <sandbox-id> --count 3
-
-# 将沙箱当前状态提交为快照模板
-ppio-sandbox-cli sandbox commit <sandbox-id> --alias my-snapshot
-```
-
-### 4. 部署 Agent
-
-```bash
-# 配置 Agent 项目（创建 Dockerfile + 配置）
-ppio-sandbox-cli agent configure -n my-agent -e app.py
-
-# 部署到 PPIO Sandbox
-ppio-sandbox-cli agent launch
-
-# 调用已部署的 Agent（传入沙箱所需的环境变量）
-ppio-sandbox-cli agent invoke '{"prompt": "hello"}' --stream --env PPIO_API_KEY=$PPIO_API_KEY
-```
-
-### 5. 模板管理
-
-```bash
-# 列出模板
-ppio-sandbox-cli template list
-
-# 发布（设为公开）
-ppio-sandbox-cli template publish <template-id>
-
-# 取消发布（设为私有）
-ppio-sandbox-cli template unpublish <template-id>
-
-# 查看版本列表及回滚
-ppio-sandbox-cli template version <template-id>
-ppio-sandbox-cli template version <template-id> --rollback <build-id>
-
-# 删除
-ppio-sandbox-cli template delete <template-id>
-```
-
-## 安全
-
-- **API Key**：设置 `PPIO_API_KEY` 环境变量供 SDK 使用。调用 Agent 时需用 `--env PPIO_API_KEY=$PPIO_API_KEY` 显式传入 — 沙箱环境不会继承本地环境变量。切勿提交到 git — 使用 `.env` 或 shell profile。
-- **认证令牌**：由 `ppio-sandbox-cli auth login` 存储在本地。运行 `auth logout` 可撤销。
-- **镜像仓库凭据**：`template build` 的 `-u`/`-w` 参数用于私有 Docker 仓库。优先使用环境变量而非 CLI 参数，避免在 shell 历史中泄露密钥。
-
-## 输出解读
-
-| 命令 | 输出 | 关键字段 |
-|------|------|----------|
-| `template build` | 构建进度 → 模板 ID | Template ID（用于 `sandbox create`） |
-| `template list` | 模板列表 | `ID`、`Name`、`Status`、`Type` |
-| `sandbox create` | Sandbox ID（`--detach` 模式）或交互式终端 | Sandbox ID（用于 connect/kill/logs） |
-| `sandbox list` | 运行中沙箱列表 | `ID`、`Template`、`State`、`Created` |
-| `sandbox logs` | 实时日志流 | 时间戳、级别、消息 |
-| `sandbox metrics` | CPU/内存/磁盘统计 | 百分比和绝对值 |
-| `sandbox clone` | 新沙箱 ID 列表 | 每个克隆一个 ID |
-| `sandbox commit` | 新快照模板 ID | Template ID（可像构建模板一样复用） |
-| `agent launch` | 构建进度 → 部署 URL | Agent ID（`agent_name-template_id`） |
-| `agent invoke` | Agent 响应（JSON 或流式） | 取决于 Agent 实现 |
-
-## 注意事项
-
-- 模板名称只允许小写字母、数字、短横线和下划线。
-- `--memory-mb` 必须是偶数（默认：512）。
-- `--cpu-count` 默认为 2。
-- 不加 `--detach` 的 `sandbox create` 会自动连接终端 — 用 Ctrl+D 或 `exit` 断开。
-- 在非 TTY 环境（AI Agent、CI/CD）中，必须使用 `sandbox create --detach`。
-- `agent invoke` 运行在全新沙箱中 — 本地环境变量不会自动传入。使用 `--env KEY=VALUE` 显式传递。
-- `agent launch` 超时默认 300 秒；大镜像可用 `--timeout` 增加。
-- 配置存储在项目根目录的 `ppio.toml` 中（`template build` 后生成）。
-
-## 故障排除
-
-| 错误 | 原因 | 解决方案 |
-|------|------|----------|
-| `Error: not logged in` | 没有认证令牌 | 运行 `ppio-sandbox-cli auth login` |
-| `Error: template not found` | ID 错误或已删除 | 运行 `template list` 确认；检查 `--team` 参数 |
-| `Error: sandbox not found` | 沙箱已终止或过期 | 运行 `sandbox list` 检查；沙箱到期后会自动销毁 |
-| `setRawMode is not a function` | 在非 TTY 环境中未加 `--detach` 运行 `sandbox create` | 使用 `sandbox create <template-id> --detach` |
-| `EACCES` on `npm install -g` | 没有全局 npm 权限 | 使用 `sudo npm install -g` 或修正 npm 前缀（`npm config set prefix ~/.npm-global`） |
-| 构建超时 | 大镜像或网络慢 | 增加 `--timeout`；用 `--no-cache` 跳过缓存层 |
-| `--memory-mb` 校验错误 | 提供了奇数值 | 使用偶数（如 512、1024、2048） |
-| `connect` 卡住 | 沙箱仍在启动 | 等待就绪；用 `sandbox logs` 查看启动错误 |
-| `agent invoke` 返回 404 | Agent 未部署或 ID 错误 | 用 `agent launch --dry-run` 验证；检查 Agent ID 格式：`name-templateId` |
-
-## 完整 CLI 参考
-
-当需要查看某个命令的完整选项时，Read 'references/cli-reference.md' 获取所有命令的详细参数说明。
-
----
-
-## 更新
-
-更新本技能到最新版本：
-
-```bash
-curl -sL "https://raw.githubusercontent.com/PPIO/ppio-skills/main/skills/ppio-sandbox/SKILL.md" \
-  -o "$(dirname "$0")/SKILL.md" 2>/dev/null || echo "请从 https://github.com/PPIO/ppio-skills 手动更新"
-```
-
-仅在用户明确要求时更新。
+To see what changed in a release (SDK, CLI, or API behavior), check the changelog at <https://ppio.com/docs/announcement/changelog-agent-sx>.
